@@ -284,23 +284,49 @@
         <!-- Approval Section -->
         <div class="approval-section">
             <div class="approval-grid">
-                @foreach($formRequest->approvals->sortBy('action_date') as $approval)
-                    @if(in_array($approval->action, ['Approved', 'Rejected']) && !empty($approval->signature_data))
-                        <div class="approval-box">
-                            <div class="signature-container">
-                                <img src="{{ $approval->signature_data }}" alt="Digital Signature" class="signature-image">
+                                @foreach($formRequest->approvals->sortBy('action_date') as $approval)
+                    @if(in_array($approval->action, ['Approved', 'Rejected']))
+                        @if(!empty($approval->signature_data) && (strpos($approval->signature_data, 'data:image/') === 0 || filter_var($approval->signature_data, FILTER_VALIDATE_URL)))
+                            <div class="approval-box">
+                                <div class="signature-container">
+                                    <img src="{{ $approval->signature_data }}" alt="Digital Signature" class="signature-image">
+                                </div>
+                                <div class="approval-name">
+                                    {{ $approval->approver->employeeInfo->FirstName }} {{ $approval->approver->employeeInfo->LastName }}
+                                </div>
+                                <div class="approval-info">
+                                    {{ $approval->approver->position }}<br>
+                                    {{ $approval->approver->department->dept_name }}
+                                </div>
+                                <div class="approval-status">
+                                    {{ $approval->action }}
+                                </div>
+                                <div class="approval-date">
+                                    {{ $approval->action_date->format('M j, Y') }}
+                                </div>
                             </div>
-                            <div class="approval-name">
-                                {{ $approval->approver->employeeInfo->FirstName }} {{ $approval->approver->employeeInfo->LastName }}
+                        @elseif(!empty($approval->signature_name))
+                            <div class="approval-box">
+                                <div class="signature-container">
+                                    <div class="signature-text" style="font-family: '{{ $approval->signatureStyleApplied->font_family ?? 'Dancing Script' }}', cursive;">
+                                        {{ strtoupper($approval->signature_name) }}
+                                    </div>
+                                </div>
+                                <div class="approval-name">
+                                    {{ $approval->approver->employeeInfo->FirstName }} {{ $approval->approver->employeeInfo->LastName }}
+                                </div>
+                                <div class="approval-info">
+                                    {{ $approval->approver->position }}<br>
+                                    {{ $approval->approver->department->dept_name }}
+                                </div>
+                                <div class="approval-status">
+                                    {{ $approval->action }}
+                                </div>
+                                <div class="approval-date">
+                                    {{ $approval->action_date->format('M j, Y') }}
+                                </div>
                             </div>
-                            <div class="approval-info">
-                                {{ $approval->approver->position }}<br>
-                                {{ $approval->approver->department->dept_name }}
-                            </div>
-                            <div class="approval-status">
-                                {{ $approval->action }}
-                            </div>
-                        </div>
+                        @endif
                     @endif
                 @endforeach
             </div>

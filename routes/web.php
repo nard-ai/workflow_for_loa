@@ -43,8 +43,11 @@ Route::get('/login', function () {
 
 Route::middleware(['auth', 'prevent.admin'])->group(function () {
     // Dashboard - Employee dashboard only
-    Route::get('/dashboard', [DashboardController::class, 'index'])
-        ->middleware(['verified'])->name('dashboard');
+    // Dashboard route
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Dashboard API routes
+    Route::get('/api/dashboard/more-feedback', [DashboardController::class, 'moreFeedback'])->name('dashboard.more-feedback');
 
     // Unified Requests - Employee only
     Route::get('/requests', [RequestController::class, 'index'])->name('request.index'); // For listing all types of requests

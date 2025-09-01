@@ -35,9 +35,16 @@ class JobOrderProgress extends Model
         return $this->belongsTo(User::class, 'user_id', 'accnt_id');
     }
 
+    // Alias for progressUser relationship (for consistency with track view)
+    public function updated_by_user(): BelongsTo
+    {
+        return $this->progressUser();
+    }
+
     public function getEstimatedTimeRemainingFormattedAttribute(): ?string
     {
-        if (!$this->estimated_time_remaining) return null;
+        if (!$this->estimated_time_remaining)
+            return null;
         $minutes = (int) $this->estimated_time_remaining;
         $h = intdiv($minutes, 60);
         $m = $minutes % 60;

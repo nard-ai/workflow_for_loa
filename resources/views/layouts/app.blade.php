@@ -76,7 +76,7 @@
                 <x-toast-notification type="success" :message="session('success')" />
             @endif
 
-            @if (session('error'))
+            @if (session('error') && !request()->ajax())
                 <x-toast-notification type="error" :message="session('error')" />
             @endif
 
@@ -90,7 +90,11 @@
 
             <!-- Page Content -->
             <main>
-                {{ $slot }}
+                @isset($slot)
+                    {{ $slot }}
+                @else
+                    @yield('content')
+                @endisset
             </main>
         </div>
 

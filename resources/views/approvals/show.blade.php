@@ -1,3 +1,34 @@
+    <!-- Custom CSS for Signature Block -->
+    <style>
+        .signature-block {
+            background: linear-gradient(145deg, #f8fafc, #f1f5f9);
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .dark .signature-block {
+            background: linear-gradient(145deg, #374151, #4b5563);
+            border: 1px solid #6b7280;
+        }
+        .signature-line {
+            border-top: 2px solid #374151;
+            position: relative;
+        }
+        .dark .signature-line {
+            border-top: 2px solid #9ca3af;
+        }
+        .signature-name {
+            letter-spacing: 0.1em;
+            font-weight: 700;
+        }
+        .signature-title {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+        .dark .signature-title {
+            color: #9ca3af;
+        }
+    </style>
+
     <!-- Approval Error Modal -->
     <div id="approvalErrorModal" class="fixed inset-0 bg-gray-900 bg-opacity-30 hidden overflow-y-auto h-full w-full z-70 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 relative">
@@ -24,6 +55,41 @@ function showApprovalError(message) {
         msgDiv.innerHTML = message;
         modal.classList.remove('hidden');
     }
+}
+
+function showValidationError(message) {
+    // Create validation alert element with different styling
+    const validationAlert = document.createElement('div');
+    validationAlert.className = 'fixed top-4 right-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded shadow-lg z-50 max-w-md';
+    validationAlert.innerHTML = `
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+            </div>
+            <div class="ml-3 flex-1">
+                <h3 class="text-sm font-medium text-yellow-800">Required Information</h3>
+                <div class="mt-1 text-sm text-yellow-700">${message}</div>
+            </div>
+            <div class="ml-auto pl-3">
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-yellow-400 hover:text-yellow-600">
+                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(validationAlert);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (validationAlert.parentNode) {
+            validationAlert.remove();
+        }
+    }, 5000);
 }
 function closeApprovalErrorModal() {
     const modal = document.getElementById('approvalErrorModal');
@@ -83,6 +149,36 @@ function closeModal() {
         modal.classList.add('hidden');
     }
 }
+
+function showSuccessMessage(message) {
+    // Create success alert element
+    const successAlert = document.createElement('div');
+    successAlert.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 flex items-center space-x-3 transform transition-all duration-300 translate-x-full';
+    successAlert.innerHTML = `
+        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span class="font-medium">${message}</span>
+    `;
+    
+    // Add to page
+    document.body.appendChild(successAlert);
+    
+    // Animate in
+    setTimeout(() => {
+        successAlert.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        successAlert.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (successAlert.parentNode) {
+                successAlert.parentNode.removeChild(successAlert);
+            }
+        }, 300);
+    }, 3000);
+}
 </script>
 <!-- Feedback Final Confirmation Modal -->
 <div id="feedbackFinalConfirmModal" class="fixed inset-0 bg-gray-900 bg-opacity-30 hidden overflow-y-auto h-full w-full z-80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -137,14 +233,94 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateCountAndValidation() {
         var val = feedbackInput.value;
+        var isValid = true;
+        var validationMessages = [];
+        
+        // Character count
         confirmCharCount.textContent = val.length + ' characters';
+        
+        // Length validation
         if (val.length < 10) {
             confirmCharCount.classList.add('text-red-500');
-            readyText.textContent = '';
-            submitBtn.disabled = false;
+            validationMessages.push('At least 10 characters required');
+            isValid = false;
+        } else if (val.length > 2000) {
+            confirmCharCount.classList.add('text-red-500');
+            validationMessages.push('Maximum 2000 characters allowed');
+            isValid = false;
         } else {
             confirmCharCount.classList.remove('text-red-500');
+        }
+        
+        // Duplicate character validations
+        if (val.length > 0) {
+            // Check for excessive repeated characters (more than 3 consecutive)
+            if (/(.)\1{3,}/.test(val)) {
+                validationMessages.push('Cannot contain more than 3 consecutive identical characters');
+                isValid = false;
+            }
+            
+            // Check for repeated patterns
+            if (/(.{2,})\1{2,}/.test(val)) {
+                validationMessages.push('Cannot contain excessively repeated text patterns');
+                isValid = false;
+            }
+            
+            // Check character variety (more than 50% same character)
+            var chars = val.toLowerCase().replace(/\s+/g, '').split('');
+            if (chars.length > 0) {
+                var charCounts = {};
+                chars.forEach(function(char) {
+                    charCounts[char] = (charCounts[char] || 0) + 1;
+                });
+                var maxCount = Math.max(...Object.values(charCounts));
+                if (maxCount / chars.length > 0.5) {
+                    validationMessages.push('Feedback must contain more varied content');
+                    isValid = false;
+                }
+            }
+            
+            // Check for alphabetic characters
+            if (!/[a-zA-Z]/.test(val)) {
+                validationMessages.push('Must contain alphabetic characters');
+                isValid = false;
+            }
+            
+            // Check word count (minimum 3 words)
+            var wordCount = val.trim().split(/\s+/).filter(word => word.length > 0).length;
+            if (wordCount < 3) {
+                validationMessages.push('Must contain at least 3 words');
+                isValid = false;
+            }
+        }
+        
+        // Update validation display
+        var validationDisplay = document.getElementById('feedbackValidationMessages');
+        if (!validationDisplay) {
+            validationDisplay = document.createElement('div');
+            validationDisplay.id = 'feedbackValidationMessages';
+            validationDisplay.className = 'mt-2 text-sm';
+            feedbackInput.parentNode.appendChild(validationDisplay);
+        }
+        
+        if (validationMessages.length > 0) {
+            validationDisplay.innerHTML = validationMessages.map(msg => 
+                `<div class="text-red-500 flex items-center mb-1">
+                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                    ${msg}
+                </div>`
+            ).join('');
+            readyText.textContent = '';
+            submitBtn.disabled = true;
+        } else if (val.length >= 10) {
+            validationDisplay.innerHTML = ''; // Clear validation messages when valid
             readyText.textContent = '✓ Ready to submit';
+            submitBtn.disabled = false;
+        } else {
+            validationDisplay.innerHTML = '';
+            readyText.textContent = '';
             submitBtn.disabled = false;
         }
     }
@@ -154,6 +330,16 @@ document.addEventListener('DOMContentLoaded', function() {
     feedbackForm.addEventListener('submit', function(e) {
         e.preventDefault();
         var val = feedbackInput.value;
+        
+        // Comprehensive validation before showing any modal
+        var validationResult = validateFeedbackContent(val);
+        
+        if (!validationResult.isValid) {
+            // Show validation errors
+            alert('Please fix the following issues:\n' + validationResult.errors.join('\n'));
+            return;
+        }
+        
         if (val.length < 10) {
             if (shortWarningModal && shortCharCount) {
                 shortCharCount.textContent = val.length;
@@ -167,9 +353,58 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             // Show confirmation modal
             document.getElementById('finalFeedbackPreview').textContent = val;
-            document.getElementById('feedbackFinalConfirmModal').classList.remove('hidden');
+            // Close the original feedback modal first
+            closeFeedbackConfirmModal();
+            // Add a small delay for smooth transition
+            setTimeout(function() {
+                document.getElementById('feedbackFinalConfirmModal').classList.remove('hidden');
+            }, 150);
         }
     });
+
+    // Validation helper function
+    function validateFeedbackContent(text) {
+        var errors = [];
+        
+        // Check for excessive repeated characters
+        if (/(.)\1{3,}/.test(text)) {
+            errors.push('Cannot contain more than 3 consecutive identical characters');
+        }
+        
+        // Check for repeated patterns
+        if (/(.{2,})\1{2,}/.test(text)) {
+            errors.push('Cannot contain excessively repeated text patterns');
+        }
+        
+        // Check alphabetic content
+        if (!/[a-zA-Z]/.test(text)) {
+            errors.push('Must contain alphabetic characters');
+        }
+        
+        // Check word count
+        var wordCount = text.trim().split(/\s+/).filter(word => word.length > 0).length;
+        if (wordCount < 3 && text.length >= 10) {
+            errors.push('Must contain at least 3 words');
+        }
+        
+        // Check character variety
+        var chars = text.toLowerCase().replace(/\s+/g, '').split('');
+        if (chars.length > 0) {
+            var charCounts = {};
+            chars.forEach(function(char) {
+                charCounts[char] = (charCounts[char] || 0) + 1;
+            });
+            var maxCount = Math.max(...Object.values(charCounts));
+            if (maxCount / chars.length > 0.5) {
+                errors.push('Must contain more varied content');
+            }
+        }
+        
+        return {
+            isValid: errors.length === 0,
+            errors: errors
+        };
+    }
 
     window.closeFinalFeedbackConfirmModal = function() {
         document.getElementById('feedbackFinalConfirmModal').classList.add('hidden');
@@ -178,6 +413,8 @@ document.addEventListener('DOMContentLoaded', function() {
         var val = feedbackInput.value;
         feedbackFormComments.value = val;
         document.getElementById('feedbackFinalConfirmModal').classList.add('hidden');
+        // Also ensure the original feedback modal is closed
+        closeFeedbackConfirmModal();
         feedbackForm.submit();
     };
     window.closeShortFeedbackWarning = function() {
@@ -185,11 +422,33 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     window.proceedWithShortFeedback = function() {
         var val = feedbackInput.value;
-        // Submit feedback (simulate form submission)
-        // TODO: Replace with actual AJAX or form submit
-        alert('Feedback submitted: ' + val);
+        
+        // Perform final validation before submission
+        if (val.length < 10) {
+            alert('Feedback must be at least 10 characters long.');
+            return;
+        }
+        
+        // Check for duplicate character issues even in short feedback
+        if (/(.)\1{3,}/.test(val)) {
+            alert('Feedback cannot contain more than 3 consecutive identical characters.');
+            return;
+        }
+        
+        if (!/[a-zA-Z]/.test(val)) {
+            alert('Feedback must contain alphabetic characters.');
+            return;
+        }
+        
+        // Set the feedback value and submit
+        feedbackFormComments.value = val;
+        
+        // Close modals
         closeShortFeedbackWarning();
         closeFeedbackConfirmModal();
+        
+        // Submit the form
+        feedbackForm.submit();
     };
 });
 </script>
@@ -261,7 +520,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                     @if($approval->action === 'Rejected') bg-red-500
                                                     @elseif($approval->action === 'Approved') bg-green-500
                                                     @elseif($approval->action === 'Evaluate') bg-blue-500
-                                                    @elseif($approval->action === 'Send Feedback') bg-yellow-500
+                                                    @elseif($approval->action === 'Send Feedback') bg-green-500
                                                     @else bg-gray-500
                                                     @endif
                                                     rounded-full w-8 h-8 flex items-center justify-center ring-4 ring-white dark:ring-gray-800
@@ -290,6 +549,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                     {{ $approval->action }} by {{ $approval->approver->employeeInfo->FirstName }} {{ $approval->approver->employeeInfo->LastName }}
                                                     <span class="text-sm font-normal text-gray-500 dark:text-gray-400">({{ $approval->approver->position }})</span>
                                                 </div>
+                                                
                                                 @if($approval->comments)
                                                     <div class="mt-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
                                                         "{{ $approval->comments }}"
@@ -412,7 +672,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     @if ($finalApprovals->count() > 0)
                         <div class="border-b pb-4 mb-4">
                             <h3 class="text-lg font-semibold mb-4">Signatures</h3>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 @foreach ($finalApprovals->sortBy('action_date') as $approval)
                                     @php
                                         $approverUser = $approval->approver;
@@ -420,34 +680,82 @@ document.addEventListener('DOMContentLoaded', function() {
                                         $isBase64 = isset($approval->signature_data) && \Illuminate\Support\Str::startsWith($approval->signature_data, ['data:image/png;base64,', 'data:image/jpeg;base64,']);
                                         $isUrl = isset($approval->signature_data) && filter_var($approval->signature_data, FILTER_VALIDATE_URL);
                                     @endphp
-                                    @if (!empty($approval->signature_data) && ($isBase64 || $isUrl))
-                                        <div class="border rounded-lg p-4 flex flex-col items-center justify-between h-48">
-                                            <div class="flex-grow flex items-center justify-center w-full mb-2"> 
-                                                <img src="{{ $approval->signature_data }}" alt="Digital Signature" class="max-w-full max-h-24 object-contain">
-                                            </div>
-                                            <div class="text-center">
-                                                <p class="font-medium text-sm">{{ $displayName }}</p>
-                                                <p class="text-xs">
-                                                    <span class="px-2 py-0.5 rounded text-xs
-                                                        @if($approval->action === 'Rejected') bg-red-100 text-red-800
-                                                        @elseif($approval->action === 'Approved') bg-green-100 text-green-800
-                                                        @endif">
-                                                        {{ $approval->action }}
-                                                    </span>
-                                                    @if ($approverUser)
-                                                        <span class="text-gray-500">({{ $approverUser->position }})</span>
+                                    
+                                    {{-- Traditional Signature Block --}}
+                                    <div class="signature-block relative bg-gradient-to-b from-gray-50 to-white border border-gray-200 rounded-lg p-6 h-48 flex flex-col justify-between shadow-sm">
+                                        {{-- Signature Area --}}
+                                        <div class="signature-area flex-grow flex items-center justify-center mb-3">
+                                            @if (!empty($approval->signature_data) && ($isBase64 || $isUrl))
+                                                {{-- Drawn Digital Signature --}}
+                                                <img src="{{ $approval->signature_data }}" alt="Digital Signature" class="max-w-full max-h-16 object-contain filter drop-shadow-sm">
+                                            @elseif (!empty($approval->signature_name))
+                                                {{-- Text Style Signature --}}
+                                                <div class="text-signature-display">
+                                                    @php
+                                                        // Get signature style from signature_style_choice (database ID)
+                                                        $signatureStyleId = $approval->signature_style_choice ?? $approval->signature_style_id;
+                                                        $signatureStyle = null;
+                                                        
+                                                        // Find the signature style in the database
+                                                        if ($signatureStyleId) {
+                                                            $signatureStyle = $signatureStyles->firstWhere('id', $signatureStyleId);
+                                                        }
+                                                    @endphp
+                                                    
+                                                    @if($signatureStyle)
+                                                        @if($signatureStyle->name === 'Formal Bold')
+                                                            <div class="database-signature-style text-xl font-bold text-gray-800" style="font-family: '{{ $signatureStyle->font_family }}', serif; text-decoration: underline; text-transform: uppercase;">
+                                                                {{ $approval->signature_name }}
+                                                            </div>
+                                                        @elseif($signatureStyle->name === 'Typewriter')
+                                                            <div class="database-signature-style text-lg font-mono text-gray-800" style="font-family: '{{ $signatureStyle->font_family }}', monospace; letter-spacing: 2px; text-transform: uppercase;">
+                                                                {{ $approval->signature_name }}
+                                                            </div>
+                                                        @else
+                                                            <div class="database-signature-style text-xl text-gray-800" style="font-family: '{{ $signatureStyle->font_family }}', cursive; text-transform: uppercase;">
+                                                                {{ $approval->signature_name }}
+                                                            </div>
+                                                        @endif
+                                                    @else
+                                                        {{-- Fallback if no style found --}}
+                                                        <div class="signature-default text-xl font-serif italic text-gray-800" style="text-transform: uppercase;">
+                                                            {{ $approval->signature_name }}
+                                                        </div>
                                                     @endif
-                                                </p>
-                                                <p class="text-xs text-gray-500 mt-0.5">{{ \Carbon\Carbon::parse($approval->action_date)->setTimezone(config('app.timezone_display', 'Asia/Manila'))->format('M j, Y, g:i A') }}</p>
+                                                </div>
+                                            @else
+                                                <div class="signature-placeholder text-gray-400 italic text-sm border-b border-gray-300 pb-1 min-w-32 text-center">
+                                                    Digital Signature
+                                                </div>
+                                            @endif
+                                        </div>
+                                        
+                                        {{-- Name Line --}}
+                                        <div class="name-line border-t border-gray-400 pt-2 text-center">
+                                            <div class="font-serif text-sm font-medium text-gray-800 tracking-wide">
+                                                {{ $displayName }}
+                                            </div>
+                                            <div class="text-xs text-gray-600 mt-1">
+                                                @if ($approverUser)
+                                                    {{ $approverUser->position }}
+                                                @endif
                                             </div>
                                         </div>
-                                    @endif
-                                                </span>
-                                                @if ($approverUser)
-                                                    <span class="text-gray-500">({{ $approverUser->position }})</span>
-                                                @endif
-                                            </p>
-                                            <p class="text-xs text-gray-500 mt-0.5">{{ \Carbon\Carbon::parse($approval->action_date)->setTimezone(config('app.timezone_display', 'Asia/Manila'))->format('M j, Y, g:i A') }}</p>
+                                        
+                                        {{-- Status Badge --}}
+                                        <div class="absolute top-2 right-2">
+                                            <span class="px-2 py-1 rounded-full text-xs font-medium
+                                                @if($approval->action === 'Rejected') bg-red-100 text-red-700 border border-red-200
+                                                @elseif($approval->action === 'Approved') bg-green-100 text-green-700 border border-green-200
+                                                @else bg-gray-100 text-gray-700 border border-gray-200
+                                                @endif">
+                                                {{ $approval->action }}
+                                            </span>
+                                        </div>
+                                        
+                                        {{-- Date --}}
+                                        <div class="absolute bottom-1 left-2 text-xs text-gray-500">
+                                            {{ \Carbon\Carbon::parse($approval->action_date)->setTimezone(config('app.timezone_display', 'Asia/Manila'))->format('M j, Y') }}
                                         </div>
                                     </div>
                                 @endforeach
@@ -476,7 +784,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </button>
                                 @elseif($canSendFeedback)
                                     {{-- PFMO Sub-department staff get Send Feedback option only (no reject) --}}
-                                    <button onclick="openFeedbackConfirmModal()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded">
+                                    <button onclick="openFeedbackConfirmModal()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
                                         Send Feedback
                                     </button>
                                 @elseif($canFinalDecision)
@@ -672,37 +980,84 @@ document.addEventListener('DOMContentLoaded', function() {
 
                                             <!-- Text Style Signature Method -->
                                             <div id="textSignatureMethodShow">
-                                                <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-2">
-                                                    <div id="signatureStyles" class="flex flex-row justify-center items-center gap-6">
+                                                <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-4">
+                                                    <div id="signatureStyles" class="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto pr-2">
                                                         {{-- Signature styles will be loaded here --}}
                                                     </div>
                                                     <style>
+                                                        /* Import Google Fonts for signature styles */
+                                                        @import url('https://fonts.googleapis.com/css2?family=Mr+Dafoe&family=Homemade+Apple&family=Pacifico&family=Dancing+Script:wght@400;500;600;700&display=swap');
+                                                        
+                                                        #signatureStyles {
+                                                            /* Custom scrollbar */
+                                                            scrollbar-width: thin;
+                                                            scrollbar-color: #cbd5e1 #f1f5f9;
+                                                        }
+                                                        
+                                                        #signatureStyles::-webkit-scrollbar {
+                                                            width: 6px;
+                                                        }
+                                                        
+                                                        #signatureStyles::-webkit-scrollbar-track {
+                                                            background: #f1f5f9;
+                                                            border-radius: 3px;
+                                                        }
+                                                        
+                                                        #signatureStyles::-webkit-scrollbar-thumb {
+                                                            background: #cbd5e1;
+                                                            border-radius: 3px;
+                                                        }
+                                                        
+                                                        #signatureStyles::-webkit-scrollbar-thumb:hover {
+                                                            background: #94a3b8;
+                                                        }
+                                                        
                                                         #signatureStyles .signature-preview {
-                                                            min-width: 120px;
-                                                            height: 32px;
+                                                            width: 100%;
+                                                            min-height: 60px;
                                                             display: flex;
                                                             align-items: center;
                                                             justify-content: center;
-                                                            font-size: 1.1rem;
-                                                            font-weight: 700;
-                                                            padding: 0.2rem 0.6rem;
-                                                            border-radius: 9999px;
+                                                            padding: 1rem;
+                                                            border-radius: 8px;
                                                             border: 2px solid #e5e7eb;
-                                                            background: #f3f4f6;
-                                                            color: #222;
+                                                            background: #f9fafb;
+                                                            color: #1f2937;
                                                             cursor: pointer;
-                                                            transition: box-shadow 0.2s, border-color 0.2s;
+                                                            transition: all 0.2s ease;
+                                                            margin-bottom: 8px;
+                                                            text-align: center;
+                                                            font-size: 1.25rem;
+                                                            position: relative;
                                                         }
-                                                        #signatureStyles .signature-preview.bg-blue-100 {
-                                                            box-shadow: 0 0 0 4px #3b82f6;
+                                                        
+                                                        #signatureStyles .signature-preview .font-name {
+                                                            position: absolute;
+                                                            top: 4px;
+                                                            right: 8px;
+                                                            font-size: 0.75rem;
+                                                            color: #6b7280;
+                                                            background: rgba(255,255,255,0.8);
+                                                            padding: 2px 6px;
+                                                            border-radius: 4px;
+                                                        }
+                                                        
+                                                        #signatureStyles .signature-preview:hover {
                                                             border-color: #3b82f6;
-                                                            background: #e0f2fe;
+                                                            background: #eff6ff;
+                                                            transform: translateY(-1px);
+                                                            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                                                        }
+                                                        #signatureStyles .signature-preview.selected {
+                                                            border-color: #3b82f6;
+                                                            background: #dbeafe;
+                                                            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
                                                         }
                                                     </style>
-                                                    <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 text-center">
-                                                        Select a style and your name will be converted to a signature
+                                                    <div class="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+                                                        Select a style and your name will be converted to a signature (scroll for more options)
                                                     </div>
-                                                    <span id="signatureErrorShow" class="hidden text-xs text-red-500 block text-center mt-1">
+                                                    <span id="signatureErrorShow" class="hidden text-xs text-red-500 block text-center mt-2">
                                                         Please select a signature style
                                                     </span>
                                                 </div>
@@ -1024,27 +1379,71 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Signature style selection logic
     // Example: Load available styles (replace with dynamic if needed)
-    const styles = [
-        { id: 1, name: 'Cursive', font: 'Pacifico' },
-        { id: 2, name: 'Bold', font: 'Arial Black' },
-        { id: 3, name: 'Classic', font: 'Times New Roman' }
-    ];
+    // Get signature styles from database
+    const styles = @json($signatureStyles->map(function($style) {
+        return [
+            'id' => $style->id,
+            'name' => $style->name,
+            'font_family' => $style->font_family
+        ];
+    }));
+    
     const styleContainer = document.getElementById('signatureStyles');
     if (styleContainer) {
         styleContainer.innerHTML = '';
         styles.forEach(style => {
             const div = document.createElement('div');
             div.className = 'signature-preview';
-            div.style.fontFamily = style.font;
-            div.textContent = document.getElementById('name') ? document.getElementById('name').value : 'Signature';
+            
+            // Apply the font family with fallbacks
+            const fontFamily = `"${style.font_family}", cursive, serif`;
+            div.style.fontFamily = fontFamily;
+            div.style.fontSize = '1.25rem';
+            div.style.fontWeight = 'normal';
+            
+            // Apply special styling for specific fonts
+            if (style.name === 'Formal Bold') {
+                div.style.fontWeight = 'bold';
+                div.style.textDecoration = 'underline';
+            } else if (style.name === 'Typewriter') {
+                div.style.fontFamily = `"${style.font_family}", monospace`;
+                div.style.letterSpacing = '2px';
+                div.style.fontSize = '1.1rem';
+            }
+            
+            // Add font name badge
+            const fontBadge = document.createElement('span');
+            fontBadge.className = 'font-name';
+            fontBadge.textContent = style.name;
+            div.appendChild(fontBadge);
+            
+            // Add the preview text
+            const previewText = document.getElementById('name') ? document.getElementById('name').value.toUpperCase() : 'SIGNATURE PREVIEW';
+            div.appendChild(document.createTextNode(previewText));
+            
             div.onclick = function() {
                 document.getElementById('signatureStyle').value = style.id;
                 // Highlight selected
-                Array.from(styleContainer.children).forEach(child => child.classList.remove('bg-blue-100'));
-                div.classList.add('bg-blue-100');
+                Array.from(styleContainer.children).forEach(child => child.classList.remove('selected'));
+                div.classList.add('selected');
             };
             styleContainer.appendChild(div);
         });
+        
+        // Auto-update preview text when name changes
+        const nameField = document.getElementById('name');
+        if (nameField) {
+            nameField.addEventListener('input', function() {
+                const previews = styleContainer.querySelectorAll('.signature-preview');
+                previews.forEach(preview => {
+                    // Update only the text node (not the badge)
+                    const textNodes = Array.from(preview.childNodes).filter(node => node.nodeType === Node.TEXT_NODE);
+                    if (textNodes.length > 0) {
+                        textNodes[0].textContent = (nameField.value || 'SIGNATURE PREVIEW').toUpperCase();
+                    }
+                });
+            });
+        }
     }
 
     // Before submit, save signature data
@@ -1083,6 +1482,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             // AJAX submit for approval
             e.preventDefault();
+            
+            // Disable submit button to prevent double submission
+            const submitBtn = document.getElementById('submitActionBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `
+                <svg class="w-5 h-5 inline mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Processing...
+            `;
+            
             const formData = new FormData(actionForm);
             fetch(actionForm.action, {
                 method: 'POST',
@@ -1092,20 +1503,77 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: formData
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    let msg = data.message || 'Approval failed.';
-                    if (data.errors && Array.isArray(data.errors)) {
-                        msg += '<ul class="mt-2 list-disc list-inside text-sm">' + data.errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                // Handle both success and error responses
+                return response.text().then(text => {
+                    console.log('Raw response:', text.substring(0, 200)); // Log first 200 chars
+                    
+                    try {
+                        const data = JSON.parse(text);
+                        // Return data with response status for proper handling
+                        return { data: data, ok: response.ok, status: response.status };
+                    } catch (parseError) {
+                        console.error('JSON parse error:', parseError);
+                        throw new Error('Server returned non-JSON response: ' + text.substring(0, 100));
                     }
-                    showApprovalError(msg);
+                });
+            })
+            .then(result => {
+                const { data, ok, status } = result;
+                
+                if (ok && data.success) {
+                    // Success case
+                    // Close the modal first
+                    closeModal();
+                    
+                    // Show success message
+                    showSuccessMessage(data.message || 'Request processed successfully.');
+                    
+                    // Redirect to approvals index instead of reloading current page
+                    setTimeout(() => {
+                        window.location.href = "{{ route('approvals.index') }}";
+                    }, 1500);
+                } else {
+                    // Error case (either !ok or !data.success)
+                    // Re-enable submit button on error
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    
+                    // Check if it's a validation error (422 status) vs system error
+                    if (status === 422) {
+                        // Validation error - show user-friendly message
+                        let msg = 'Please complete the required fields:';
+                        if (data.errors && Array.isArray(data.errors)) {
+                            msg += '<ul class="mt-2 list-disc list-inside text-sm">' + data.errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
+                        }
+                        showValidationError(msg);
+                    } else {
+                        // System error - show as approval error
+                        let msg = data.message || 'Approval failed.';
+                        if (data.errors && Array.isArray(data.errors)) {
+                            msg += '<ul class="mt-2 list-disc list-inside text-sm">' + data.errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
+                        }
+                        showApprovalError(msg);
+                    }
                 }
             })
             .catch(err => {
-                showApprovalError('An unexpected error occurred. Please try again.');
+                console.error('Approval error:', err);
+                
+                // Re-enable submit button on error
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+                
+                // Handle true network/parsing errors
+                let errorMessage = 'An unexpected error occurred. Please try again.';
+                if (err.message) {
+                    errorMessage = err.message;
+                }
+                
+                showApprovalError(errorMessage);
             });
         };
     }

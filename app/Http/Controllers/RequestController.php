@@ -778,7 +778,8 @@ class RequestController extends Controller
             'leaveDetails',
             'approvals.approver.employeeInfo',
             'currentApprover',
-            'jobOrder.created_by_user.employeeInfo'
+            'jobOrder.created_by_user.employeeInfo',
+            'jobOrder.progressUpdates.updated_by_user' // Load progress updates with user info
         ])->findOrFail($formId);
 
         // Check if user has permission to view this request

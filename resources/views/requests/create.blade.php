@@ -9,8 +9,77 @@
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <form method="POST" action="{{ route('request.store') }}" id="createRequestForm">
+                    <!-- Warning for Pending Job Order Fillup -->
+                    @if(isset($hasPendingFeedback) && $hasPendingFeedback)
+                        <div class="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-medium text-yellow-800">
+                                        Pending Job Order Fillup Required
+                                    </h3>
+                                    <div class="mt-2 text-sm text-yellow-700">
+                                        @if($pendingFeedbackCount >= 2)
+                                            <p>You have {{ $pendingFeedbackCount }} completed job order(s) requiring fillup. You cannot submit new requests until you complete at least {{ $pendingFeedbackCount - 1 }} fillup(s).</p>
+                                        @else
+                                            <p>You have {{ $pendingFeedbackCount }} completed job order(s) requiring fillup. You can still submit this form, but please complete the fillup when convenient.</p>
+                                        @endif
+                                        <div class="mt-3">
+                                            @if($oldestPendingJobOrder)
+                                                {{-- Go directly to the oldest pending job order track page --}}
+                                                <a href="{{ route('request.track', $oldestPendingJobOrder->form_id) }}" 
+                                                   class="inline-flex items-center px-3 py-2 bg-yellow-600 border border-transparent rounded-md text-xs text-white uppercase tracking-widest hover:bg-yellow-700 focus:bg-yellow-700 active:bg-yellow-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                            @endif
+                                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                Fill-up Job Order Form
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- Session Error Messages for Job Order Fillup -->
+                    @if(session('error'))
+                        <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-medium text-red-800">
+                                        Cannot Submit Request
+                                    </h3>
+                                    <div class="mt-2 text-sm text-red-700">
+                                        <p>{{ session('error') }}</p>
+                                        @if(session('pending_feedback_url'))
+                                            <div class="mt-3">
+                                                <a href="{{ route('dashboard') }}" 
+                                                   class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 focus:bg-red-700 active:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                    Go to Track Request
+                                                </a>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif                    <form method="POST" action="{{ route('request.store') }}" id="request-form">
                         @csrf
+                        <input type="hidden" name="form_type" id="form_type" value="{{ old('form_type', $formData['form_type'] ?? '') }}">
+                        <input type="hidden" name="to_department_id" id="to_department_id" value="{{ old('to_department_id', $formData['to_department_id'] ?? '') }}">
 
                         <!-- Request Type -->
                         <div class="mb-6">
@@ -201,10 +270,24 @@
                             </div>
                         </div>
 
+                        <!-- Workflow Preview Container -->
+                        <div id="workflow-preview-container" class="mt-8">
+                            <!-- Preview will be populated by JavaScript -->
+                        </div>
+
                         <div class="flex items-center justify-end mt-6 border-t pt-6">
-                            <x-primary-button type="button" id="reviewButton">
-                                {{ __('Submit') }}
-                            </x-primary-button>
+                            <div class="flex space-x-4">
+                                <button type="button" data-action="preview-workflow" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600 hidden" id="fullPreviewButton">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    Preview Workflow
+                                </button>
+                                <x-primary-button type="button" id="reviewButton">
+                                    {{ __('Submit') }}
+                                </x-primary-button>
+                            </div>
                         </div>
                     </form>
 
@@ -232,11 +315,14 @@
 
                     <script>
                         document.addEventListener('DOMContentLoaded', function () {
-                            const form = document.getElementById('createRequestForm');
+                            const form = document.getElementById('request-form');
                             const requestTypeSelect = document.getElementById('request_type');
+                            const formTypeHidden = document.getElementById('form_type');
+                            const toDepartmentIdHidden = document.getElementById('to_department_id');
                             const iomFields = document.getElementById('iom_fields');
                             const leaveFields = document.getElementById('leave_fields');
                             const reviewButton = document.getElementById('reviewButton');
+                            const fullPreviewButton = document.getElementById('fullPreviewButton');
                             const modal = document.getElementById('confirmationModal');
                             const confirmationContent = document.getElementById('confirmationContent');
                             const editButton = document.getElementById('editButton');
@@ -382,6 +468,7 @@
                                     if (option.value.includes(deptName)) {
                                         iomToDepartmentNameDisplay.value = option.value;
                                         iomToDepartmentIdHidden.value = option.getAttribute('data-id');
+                                        toDepartmentIdHidden.value = option.getAttribute('data-id');
                                         
                                         break;
                                     }
@@ -407,11 +494,15 @@
                                 iomFields.classList.add('hidden');
                                 leaveFields.classList.add('hidden');
                                 reviewButton.disabled = selectedType === '' || selectedType === null;
+                                
+                                // Update hidden form_type field
+                                formTypeHidden.value = selectedType || '';
 
                                 document.querySelectorAll('.specific-fields [required]').forEach(el => el.removeAttribute('required'));
 
                                 if (selectedType === 'IOM') {
                                     iomFields.classList.remove('hidden');
+                                    fullPreviewButton.classList.remove('hidden');
                                     iomRequiredFields.forEach(id => {
                                         const el = document.getElementById(id);
                                         if(el) el.setAttribute('required', 'required');
@@ -421,10 +512,13 @@
                                     handleSubjectSelection();
                                 } else if (selectedType === 'Leave') {
                                     leaveFields.classList.remove('hidden');
+                                    fullPreviewButton.classList.remove('hidden');
                                     leaveRequiredFields.forEach(id => {
                                         const el = document.getElementById(id);
                                         if(el) el.setAttribute('required', 'required');
                                     });
+                                } else {
+                                    fullPreviewButton.classList.add('hidden');
                                 }
                             }
 
@@ -598,13 +692,15 @@
                                             const option = departmentDatalist.options[i];
                                             if (option.value === inputValue) {
                                                 iomToDepartmentIdHidden.value = option.getAttribute('data-id');
+                                                toDepartmentIdHidden.value = option.getAttribute('data-id');
                                                 found = true;
                                                 break;
                                             }
                                         }
                                     }
                                     if (!found) {
-                                        iomToDepartmentIdHidden.value = ''; 
+                                        iomToDepartmentIdHidden.value = '';
+                                        toDepartmentIdHidden.value = '';
                                     } else {
                                         // Check if the department is Administration
                                         if (inputValue.toLowerCase().includes("administration") || inputValue.toLowerCase().includes("admin")) {
@@ -641,6 +737,7 @@
                                 iomToDepartmentNameDisplay.addEventListener('change', function() {
                                     if (this.value === '') {
                                         iomToDepartmentIdHidden.value = '';
+                                        toDepartmentIdHidden.value = '';
                                     }
                                 });
                             }
@@ -742,6 +839,9 @@
                             setupAutoAssignment();
                         });
                     </script>
+                    
+                    <!-- Include Workflow Preview JavaScript -->
+                    <script src="{{ asset('js/workflow-preview.js') }}"></script>
                 </div>
             </div>
         </div>

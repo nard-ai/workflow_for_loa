@@ -42,6 +42,10 @@ class JobOrder extends Model
         'requestor_comments',
         'requestor_signature',
         'requestor_signature_date',
+        'requestor_satisfaction_rating',
+        'requestor_feedback_required',
+        'requestor_feedback_submitted',
+        'requestor_feedback_date',
         'status',
         'job_started_at',
         'job_completed_at',
@@ -55,6 +59,7 @@ class JobOrder extends Model
         'date_received' => 'date',
         'date_completed' => 'date',
         'requestor_signature_date' => 'date',
+        'requestor_feedback_date' => 'datetime',
         'assistance' => 'boolean',
         'repair_repaint' => 'boolean',
         'installation' => 'boolean',
@@ -64,7 +69,9 @@ class JobOrder extends Model
         'pull_out_transfer' => 'boolean',
         'replacement' => 'boolean',
         'job_completed' => 'boolean',
-        'for_further_action' => 'boolean'
+        'for_further_action' => 'boolean',
+        'requestor_feedback_required' => 'boolean',
+        'requestor_feedback_submitted' => 'boolean'
     ];
 
     // Relationships
@@ -93,6 +100,38 @@ class JobOrder extends Model
         return $this->hasMany(JobOrderProgress::class, 'job_order_id', 'job_order_id');
     }
 
+    // Alias for progress relationship (for consistency with track view)
+    public function progressUpdates(): HasMany
+    {
+        return $this->progress();
+    }
+
+    // Progress Helper Methods for Track View
+    public function getLatestProgressAttribute()
+    {
+        return $this->progress()->latest()->first();
+    }
+
+    public function getProgressPercentageAttribute(): int
+    {
+        return $this->latestProgress?->percentage_complete ?? 0;
+    }
+
+    public function getEstimatedTimeRemainingFormattedAttribute(): ?string
+    {
+        if (!$this->latestProgress?->estimated_time_remaining)
+            return null;
+        $minutes = (int) $this->latestProgress->estimated_time_remaining;
+        $hours = intdiv($minutes, 60);
+        $mins = $minutes % 60;
+        return ($hours ? $hours . 'h ' : '') . ($mins ? $mins . 'm' : '');
+    }
+
+    public function getProgressHistoryForTrackViewAttribute()
+    {
+        return $this->progress()->orderBy('created_at', 'desc')->take(5)->get();
+    }
+
     // Scopes and Static Methods
     public static function needingFeedbackForUser($userId)
     {
@@ -104,7 +143,7 @@ class JobOrder extends Model
             ->where(function ($query) {
                 // Only include job orders that still need feedback
                 $query->whereNull('requestor_comments')
-                      ->orWhere('requestor_comments', '');
+                    ->orWhere('requestor_comments', '');
             })
             ->get();
     }
@@ -121,7 +160,7 @@ class JobOrder extends Model
         if ($this->status !== 'Completed' || !$this->job_completed) {
             return false;
         }
-        
+
         // Check if user has provided complete feedback
         // Required feedback: requestor_comments (required) and requestor_signature (optional but preferred)
         // Job order is considered "feedback complete" if user has provided comments

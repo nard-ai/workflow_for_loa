@@ -118,6 +118,51 @@ class DashboardController extends Controller
                 ? round(($totalApproved / $totalFinalized) * 100)
                 : 0;
 
+            // Get feedback data for PFMO users only
+            $recentFeedback = collect();
+            $averageRating = null;
+            $totalFeedback = 0;
+
+            if ($user->department && $user->department->dept_code === 'PFMO') {
+                // Get recent job order feedback (5 most recent by default)
+                $recentFeedback = \App\Models\JobOrder::with([
+                    'formRequest.requester.employeeInfo',
+                    'formRequest.iomDetails'
+                ])
+                    ->where('status', 'Completed')
+                    ->whereNotNull('requestor_comments')
+                    ->whereNotNull('requestor_satisfaction_rating')
+                    ->orderBy('requestor_feedback_date', 'desc')
+                    ->take(5)
+                    ->get()
+                    ->map(function ($jobOrder) {
+                        return [
+                            'job_order_number' => $jobOrder->job_order_number,
+                            'satisfaction_rating' => $jobOrder->requestor_satisfaction_rating,
+                            'comments' => $jobOrder->requestor_comments,
+                            'comments_preview' => strlen($jobOrder->requestor_comments) > 80
+                                ? substr($jobOrder->requestor_comments, 0, 80) . '...'
+                                : $jobOrder->requestor_comments,
+                            'requestor_name' => $jobOrder->formRequest->requester->employeeInfo->FirstName . ' ' . $jobOrder->formRequest->requester->employeeInfo->LastName,
+                            'job_type' => $jobOrder->formRequest->iomDetails->purpose ?? 'General Request',
+                            'feedback_date' => $jobOrder->requestor_feedback_date,
+                            'formatted_date' => \Carbon\Carbon::parse($jobOrder->requestor_feedback_date)->format('M j, Y'),
+                        ];
+                    });
+
+                // Calculate average rating for current month
+                $monthlyFeedback = \App\Models\JobOrder::where('status', 'Completed')
+                    ->whereNotNull('requestor_satisfaction_rating')
+                    ->whereYear('requestor_feedback_date', $now->year)
+                    ->whereMonth('requestor_feedback_date', $now->month)
+                    ->get();
+
+                if ($monthlyFeedback->count() > 0) {
+                    $averageRating = round($monthlyFeedback->avg('requestor_satisfaction_rating'), 1);
+                    $totalFeedback = $monthlyFeedback->count();
+                }
+            }
+
             // Debug information
             \Log::info('Dashboard Query Info', [
                 'user_id' => $user->accnt_id,
@@ -137,6 +182,10 @@ class DashboardController extends Controller
                 'yearlyCount' => $yearlyCount,
                 'avgProcessingTime' => $avgProcessingTime,
                 'approvalRate' => $approvalRate,
+                'recentFeedback' => $recentFeedback,
+                'averageRating' => $averageRating,
+                'totalFeedback' => $totalFeedback,
+                'isPFMOUser' => $user->department && $user->department->dept_code === 'PFMO',
             ]);
 
         } catch (\Exception $e) {
@@ -152,8 +201,73 @@ class DashboardController extends Controller
                 'yearlyCount' => 0,
                 'avgProcessingTime' => 'N/A',
                 'approvalRate' => 0,
+                'recentFeedback' => collect(),
+                'averageRating' => null,
+                'totalFeedback' => 0,
+                'isPFMOUser' => false,
                 'error' => 'There was an error loading the dashboard. Please try again later.'
             ]);
+        }
+    }
+
+    /**
+     * Load more feedback for PFMO users (AJAX endpoint)
+     */
+    public function moreFeedback(Request $request)
+    {
+        $user = Auth::user();
+
+        // Check if user is PFMO
+        if (!$user->department || $user->department->dept_code !== 'PFMO') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $offset = $request->get('offset', 5); // Default offset after first 5
+        $limit = 10; // Load 10 more at a time
+
+        try {
+            $moreFeedback = \App\Models\JobOrder::with([
+                'formRequest.requester.employeeInfo',
+                'formRequest.iomDetails'
+            ])
+                ->where('status', 'Completed')
+                ->whereNotNull('requestor_comments')
+                ->whereNotNull('requestor_satisfaction_rating')
+                ->orderBy('requestor_feedback_date', 'desc')
+                ->skip($offset)
+                ->take($limit)
+                ->get()
+                ->map(function ($jobOrder) {
+                    return [
+                        'job_order_number' => $jobOrder->job_order_number,
+                        'satisfaction_rating' => $jobOrder->requestor_satisfaction_rating,
+                        'comments' => $jobOrder->requestor_comments,
+                        'comments_preview' => strlen($jobOrder->requestor_comments) > 80
+                            ? substr($jobOrder->requestor_comments, 0, 80) . '...'
+                            : $jobOrder->requestor_comments,
+                        'requestor_name' => $jobOrder->formRequest->requester->employeeInfo->FirstName . ' ' . $jobOrder->formRequest->requester->employeeInfo->LastName,
+                        'job_type' => $jobOrder->formRequest->iomDetails->purpose ?? 'General Request',
+                        'feedback_date' => $jobOrder->requestor_feedback_date,
+                        'formatted_date' => \Carbon\Carbon::parse($jobOrder->requestor_feedback_date)->format('M j, Y'),
+                    ];
+                });
+
+            // Check if there are more records
+            $hasMore = \App\Models\JobOrder::where('status', 'Completed')
+                ->whereNotNull('requestor_comments')
+                ->whereNotNull('requestor_satisfaction_rating')
+                ->skip($offset + $limit)
+                ->exists();
+
+            return response()->json([
+                'success' => true,
+                'feedback' => $moreFeedback,
+                'hasMore' => $hasMore
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error loading more feedback: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error loading feedback']);
         }
     }
 }

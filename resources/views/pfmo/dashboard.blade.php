@@ -249,6 +249,200 @@
     </div>
     @endif
 
+    <!-- Feedback Overview Section -->
+    @if(isset($feedbackData))
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold mb-6 text-gray-800 flex items-center">
+            <span class="mr-3">💬</span>
+            Requestor Feedback & Ratings
+        </h2>
+        
+        <!-- Feedback Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+            <div class="stats-card text-center bg-gradient-to-br from-yellow-400 to-yellow-600 text-white">
+                <div class="text-2xl font-bold mb-2">
+                    @if($feedbackData['statistics']['average_rating'] > 0)
+                        ⭐ {{ $feedbackData['statistics']['average_rating'] }}/5
+                    @else
+                        ⭐ N/A
+                    @endif
+                </div>
+                <div class="text-yellow-100">Average Rating</div>
+            </div>
+            
+            <div class="stats-card text-center bg-gradient-to-br from-blue-400 to-blue-600 text-white">
+                <div class="text-2xl font-bold mb-2">{{ $feedbackData['statistics']['feedback_today'] }}</div>
+                <div class="text-blue-100">New Today</div>
+            </div>
+            
+            <div class="stats-card text-center bg-gradient-to-br from-red-400 to-red-600 text-white">
+                <div class="text-2xl font-bold mb-2">{{ $feedbackData['statistics']['needs_action'] }}</div>
+                <div class="text-red-100">Need Action</div>
+            </div>
+            
+            <div class="stats-card text-center bg-gradient-to-br from-green-400 to-green-600 text-white">
+                <div class="text-2xl font-bold mb-2">{{ $feedbackData['statistics']['completion_rate'] }}%</div>
+                <div class="text-green-100">Feedback Rate</div>
+            </div>
+            
+            <div class="stats-card text-center bg-gradient-to-br from-purple-400 to-purple-600 text-white">
+                <div class="text-2xl font-bold mb-2">{{ $feedbackData['statistics']['total_feedback'] }}</div>
+                <div class="text-purple-100">Total Feedback</div>
+            </div>
+        </div>
+
+        <!-- Main Feedback Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Recent Feedback List -->
+            <div class="lg:col-span-2 bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-bold mb-4 text-gray-800 flex items-center justify-between">
+                    <span>Recent Feedback</span>
+                    <span class="text-sm font-normal text-gray-500">Last {{ count($feedbackData['recent_feedback']) }} submissions</span>
+                </h3>
+                
+                @if(count($feedbackData['recent_feedback']) > 0)
+                    <div class="space-y-4 max-h-96 overflow-y-auto">
+                        @foreach($feedbackData['recent_feedback'] as $feedback)
+                            <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex-1">
+                                        <div class="flex items-center mb-1">
+                                            <h4 class="font-semibold text-gray-900 mr-3">{{ $feedback['job_order_number'] }}</h4>
+                                            <div class="flex items-center">
+                                                @for($i = 1; $i <= 5; $i++)
+                                                    <span class="text-lg {{ $i <= $feedback['rating'] ? 'text-yellow-400' : 'text-gray-300' }}">⭐</span>
+                                                @endfor
+                                                <span class="ml-2 text-sm text-gray-600">({{ $feedback['rating'] }}/5)</span>
+                                            </div>
+                                        </div>
+                                        <p class="text-sm text-gray-700 mb-2">"{{ $feedback['comments'] }}"</p>
+                                        <div class="flex items-center justify-between text-xs text-gray-500">
+                                            <span>From: {{ $feedback['requester_name'] }}</span>
+                                            <span>{{ \Carbon\Carbon::parse($feedback['feedback_date'])->diffForHumans() }}</span>
+                                        </div>
+                                    </div>
+                                    @if($feedback['needs_action'])
+                                        <span class="ml-3 px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
+                                            Action Required
+                                        </span>
+                                    @endif
+                                </div>
+                                <div class="text-xs text-gray-600 bg-gray-100 rounded p-2">
+                                    <strong>Work:</strong> {{ Str::limit($feedback['request_description'], 100) }}
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-center py-8 text-gray-500">
+                        <span class="text-4xl mb-4 block">📝</span>
+                        <p>No feedback submissions yet</p>
+                    </div>
+                @endif
+            </div>
+
+            <!-- Rating Distribution Chart -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-bold mb-4 text-gray-800">Rating Distribution</h3>
+                
+                <div class="space-y-3">
+                    @foreach($feedbackData['rating_distribution'] as $rating)
+                        <div class="flex items-center">
+                            <div class="flex items-center w-12">
+                                <span class="text-sm font-medium">{{ $rating['stars'] }}</span>
+                                <span class="text-yellow-400 ml-1">⭐</span>
+                            </div>
+                            <div class="flex-1 mx-3">
+                                <div class="bg-gray-200 rounded-full h-4">
+                                    <div class="h-4 rounded-full transition-all duration-500 
+                                        @if($rating['stars'] >= 4) bg-green-500
+                                        @elseif($rating['stars'] == 3) bg-yellow-500
+                                        @else bg-red-500
+                                        @endif" 
+                                        style="width: {{ $rating['percentage'] }}%">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="w-16 text-right">
+                                <span class="text-sm text-gray-600">{{ $rating['count'] }} ({{ $rating['percentage'] }}%)</span>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                
+                @php
+                    $totalRatings = array_sum(array_column($feedbackData['rating_distribution'], 'count'));
+                @endphp
+                <div class="mt-4 pt-4 border-t border-gray-200 text-center">
+                    <p class="text-sm text-gray-600">Total Ratings: {{ $totalRatings }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jobs Requiring Action Alert -->
+        @if(count($feedbackData['jobs_needing_action']) > 0)
+            <div class="mt-6 bg-red-50 border border-red-200 rounded-lg p-6">
+                <h3 class="text-lg font-bold mb-4 text-red-800 flex items-center">
+                    <span class="mr-2">⚠️</span>
+                    Jobs Requiring Further Action
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @foreach($feedbackData['jobs_needing_action'] as $job)
+                        <div class="bg-white border border-red-200 rounded-lg p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-semibold text-gray-900">{{ $job['job_order_number'] }}</h4>
+                                <div class="flex items-center">
+                                    @for($i = 1; $i <= 5; $i++)
+                                        <span class="text-sm {{ $i <= $job['rating'] ? 'text-yellow-400' : 'text-gray-300' }}">⭐</span>
+                                    @endfor
+                                    <span class="ml-1 text-sm text-gray-600">({{ $job['rating'] }}/5)</span>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-700 mb-2">"{{ Str::limit($job['comments'], 100) }}"</p>
+                            <div class="text-xs text-gray-500">
+                                <p>From: {{ $job['requester_name'] }}</p>
+                                <p>{{ \Carbon\Carbon::parse($job['feedback_date'])->diffForHumans() }}</p>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        <!-- Low-Rated Jobs Alert -->
+        @if(count($feedbackData['low_rated_jobs']) > 0)
+            <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                <h3 class="text-lg font-bold mb-4 text-yellow-800 flex items-center">
+                    <span class="mr-2">⭐</span>
+                    Low-Rated Jobs (3 stars or below)
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @foreach($feedbackData['low_rated_jobs'] as $job)
+                        <div class="bg-white border border-yellow-200 rounded-lg p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-semibold text-gray-900">{{ $job['job_order_number'] }}</h4>
+                                <div class="flex items-center">
+                                    @for($i = 1; $i <= 5; $i++)
+                                        <span class="text-sm {{ $i <= $job['rating'] ? 'text-yellow-400' : 'text-gray-300' }}">⭐</span>
+                                    @endfor
+                                    <span class="ml-1 text-sm text-gray-600">({{ $job['rating'] }}/5)</span>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-700 mb-2">"{{ Str::limit($job['comments'], 100) }}"</p>
+                            <div class="text-xs text-gray-500">
+                                <p>From: {{ $job['requester_name'] }}</p>
+                                <p>{{ \Carbon\Carbon::parse($job['feedback_date'])->diffForHumans() }}</p>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+    </div>
+    @endif
+
     <!-- Recommendations -->
     @if($recommendations && count($recommendations) > 0)
     <div class="bg-white rounded-lg shadow-lg p-6">

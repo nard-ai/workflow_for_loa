@@ -45,6 +45,18 @@
                                 {{ __('Manage Approvers') }}
                             </x-nav-link>
                         @endif
+
+                        {{-- PFMO Job Orders Link --}}
+                        @if(Auth::user()->department && Auth::user()->department->dept_code === 'PFMO')
+                            <x-nav-link :href="route('job-orders.index')" :active="request()->routeIs('job-orders.index') || request()->routeIs('job-orders.show')">
+                                {{ __('Job Orders') }}
+                            </x-nav-link>
+                            @if(Auth::user()->position === 'Head')
+                                <x-nav-link :href="route('job-orders.analytics')" :active="request()->routeIs('job-orders.analytics')">
+                                    {{ __('Analytics') }}
+                                </x-nav-link>
+                            @endif
+                        @endif
                     @endif
 
                     {{-- Admin Links --}}
@@ -152,8 +164,16 @@
                         {{ __('Manage Approvers') }}
                     </x-responsive-nav-link>
                 @endif
-            @endif
 
+                {{-- PFMO Job Orders Link --}}
+                @if(Auth::user()->department && Auth::user()->department->dept_code === 'PFMO')
+                    <x-responsive-nav-link :href="route('job-orders.index')" :active="request()->routeIs('job-orders.*')">
+                        {{ __('Job Orders') }}
+                    </x-responsive-nav-link>
+                @endif
+
+                {{-- Job Order Feedback Link (for all users) --}}
+            @endif
             {{-- Admin Responsive Links --}}
             @if(Auth::user()->accessRole === 'Admin')
                 <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">

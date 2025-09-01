@@ -20,7 +20,10 @@ class PFMOController extends Controller
         $dashboard = PFMOWorkflowService::getPFMODashboard();
         $recommendations = PFMOWorkflowService::getPFMORecommendations();
         
-        return view('pfmo.dashboard', compact('dashboard', 'recommendations'));
+        // Get feedback data for dashboard
+        $feedbackData = \App\Services\PFMOFeedbackService::getDashboardSummary();
+        
+        return view('pfmo.dashboard', compact('dashboard', 'recommendations', 'feedbackData'));
     }
 
     /**
