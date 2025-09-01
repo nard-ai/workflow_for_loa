@@ -9,6 +9,14 @@ A comprehensive workflow management system built for Lyceum of Alabang, designed
   - Leave Request Management
   - Multi-level Approval Workflow
 
+- **Job Order Management System (NEW)**
+  - PFMO-exclusive job order creation and tracking
+  - Print functionality matching physical PFMO forms
+  - PDF download capability for digital records
+  - Comprehensive job order analytics and reporting
+  - Automated job order creation from approved requests
+  - Progress tracking and status management
+
 - **User-Friendly Interface**
   - Modern, responsive design
   - Dark mode support
@@ -26,6 +34,7 @@ A comprehensive workflow management system built for Lyceum of Alabang, designed
   - Processing time metrics
   - Department-wise statistics
   - Priority request handling
+  - Job order analytics and completion rates
 
 ## Technology Stack
 
