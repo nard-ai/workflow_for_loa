@@ -69,4 +69,9 @@ class FormRequest extends Model
     {
         return $this->hasMany(FormApproval::class, 'form_id', 'form_id');
     }
+
+    public function jobOrder(): HasOne
+    {
+        return $this->hasOne(JobOrder::class, 'form_id', 'form_id');
+    }
 }

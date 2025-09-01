@@ -9,6 +9,7 @@ use App\Http\Controllers\ApproverAssignmentController;
 use App\Http\Controllers\SignatureStyleController;
 use App\Http\Controllers\AdminController; // Import AdminController
 use App\Http\Controllers\Api\UserLookupController; // Add this import
+use App\Http\Controllers\WorkflowPreviewController; // Add WorkflowPreviewController
 use Illuminate\Support\Facades\Log;
 
 // Include debug routes in development environment only
@@ -20,6 +21,9 @@ if (app()->environment('local')) {
 
 // API Routes for user lookup (before authentication)
 Route::get('/api/user/lookup', [UserLookupController::class, 'lookup'])->name('api.user.lookup');
+
+// Workflow Preview API Route (before authentication for now)
+Route::post('/workflow/preview', [WorkflowPreviewController::class, 'preview'])->name('workflow.preview');
 
 Route::get('/', function () {
     if (auth()->check()) {
@@ -53,6 +57,29 @@ Route::middleware(['auth', 'prevent.admin'])->group(function () {
 
     // Notification Count API for badge notifications
     Route::get('/notifications/count', [\App\Http\Controllers\NotificationController::class, 'getCount'])->name('notifications.count');
+
+    // Job Order Routes - Employee only (PFMO staff/head)
+    Route::get('/job-orders', [\App\Http\Controllers\JobOrderController::class, 'index'])->name('job-orders.index');
+    Route::get('/job-orders/{jobOrder}', [\App\Http\Controllers\JobOrderController::class, 'show'])->name('job-orders.show');
+    Route::post('/job-orders/{jobOrder}/start', [\App\Http\Controllers\JobOrderController::class, 'startJob'])->name('job-orders.start');
+    Route::post('/job-orders/{jobOrder}/progress', [\App\Http\Controllers\JobOrderController::class, 'updateProgress'])->name('job-orders.progress');
+    Route::post('/job-orders/{jobOrder}/complete', [\App\Http\Controllers\JobOrderController::class, 'completeJob'])->name('job-orders.complete');
+    Route::post('/job-orders/{jobOrder}/submit-complete', [\App\Http\Controllers\JobOrderController::class, 'submitCompleteForm'])->name('job-orders.submit-complete');
+    Route::get('/job-orders/{jobOrder}/printable-form', [\App\Http\Controllers\JobOrderController::class, 'printableForm'])->name('job-orders.printable-form');
+
+    // Job Order Requestor Routes (for requestors to fill-up and provide feedback)
+    Route::post('/job-order/{jobOrder}/fill-up', [\App\Http\Controllers\JobOrderController::class, 'fillUpJobOrder'])->name('job-order.fill-up');
+    Route::post('/job-order/{jobOrder}/feedback', [\App\Http\Controllers\JobOrderController::class, 'submitFeedback'])->name('job-order.feedback');
+
+    // Job Order Analytics Routes (PFMO Head only)
+    Route::get('/job-orders/analytics/dashboard', [\App\Http\Controllers\JobOrderAnalyticsController::class, 'index'])->name('job-orders.analytics');
+    Route::get('/job-orders/analytics/api', [\App\Http\Controllers\JobOrderAnalyticsController::class, 'apiData'])->name('job-orders.analytics.api');
+
+    // Job Order Feedback Routes
+    Route::get('/job-orders/feedback/pending', [\App\Http\Controllers\JobOrderFeedbackController::class, 'pendingFeedback'])->name('job-orders.pending-feedback');
+    Route::get('/job-orders/{jobOrder}/feedback', [\App\Http\Controllers\JobOrderFeedbackController::class, 'showFeedbackForm'])->name('job-orders.feedback-form');
+    Route::post('/job-orders/{jobOrder}/feedback', [\App\Http\Controllers\JobOrderFeedbackController::class, 'submitFeedback'])->name('job-orders.submit-feedback');
+    Route::get('/job-orders/feedback/check', [\App\Http\Controllers\JobOrderFeedbackController::class, 'checkPendingFeedback'])->name('job-orders.check-feedback');
 
     // Approvals Route (for users with 'Approver' accessRole) - Employee only
     Route::get('/approvals', [ApprovalController::class, 'index'])

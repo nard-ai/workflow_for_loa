@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\SignatureStyle; // Add this line
 
 class User extends Authenticatable
@@ -28,6 +29,20 @@ class User extends Authenticatable
      * @var string
      */
     protected $primaryKey = 'accnt_id';
+
+    /**
+     * The "type" of the primary key ID.
+     *
+     * @var string
+     */
+    protected $keyType = 'int';
+
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     *
+     * @var bool
+     */
+    public $incrementing = true;
 
     /**
      * The attributes that are mass assignable.
@@ -106,6 +121,19 @@ class User extends Authenticatable
     public function approverPermissions(): HasOne
     {
         return $this->hasOne(ApproverPermission::class, 'accnt_id', 'accnt_id');
+    }
+
+    public function subDepartment(): BelongsTo
+    {
+        return $this->belongsTo(SubDepartment::class, 'sub_department_id');
+    }
+
+    /**
+     * Get job orders assigned to this user.
+     */
+    public function assignedJobOrders()
+    {
+        return $this->hasMany(JobOrder::class, 'assigned_to', 'accnt_id');
     }
 
     /**
