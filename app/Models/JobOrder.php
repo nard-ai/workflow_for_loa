@@ -101,6 +101,11 @@ class JobOrder extends Model
         })
             ->where('status', 'Completed')
             ->where('job_completed', true)
+            ->where(function ($query) {
+                // Only include job orders that still need feedback
+                $query->whereNull('requestor_comments')
+                      ->orWhere('requestor_comments', '');
+            })
             ->get();
     }
 
@@ -112,7 +117,15 @@ class JobOrder extends Model
     // Instance Methods
     public function needsFeedback(): bool
     {
-        return $this->status === 'Completed' && $this->job_completed;
+        // Job must be completed first
+        if ($this->status !== 'Completed' || !$this->job_completed) {
+            return false;
+        }
+        
+        // Check if user has provided complete feedback
+        // Required feedback: requestor_comments (required) and requestor_signature (optional but preferred)
+        // Job order is considered "feedback complete" if user has provided comments
+        return empty($this->requestor_comments);
     }
 
     public function canStart(): bool
