@@ -16,7 +16,6 @@ use Illuminate\Support\Facades\Log;
 if (app()->environment('local')) {
     include __DIR__ . '/debug-routes.php';
     include __DIR__ . '/debug-department-routes.php';
-    include __DIR__ . '/debug-notification-badge.php';
 }
 
 // API Routes for user lookup (before authentication)
