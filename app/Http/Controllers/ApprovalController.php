@@ -19,6 +19,8 @@ use App\Services\ApprovalCacheService; // Add cache service
 use App\Services\JobOrderService; // Add job order service
 use Exception;
 
+// Sample comment desu
+
 class ApprovalController extends Controller
 {
     use AuthorizesRequests;    /**
